@@ -2,7 +2,7 @@
   "name": "chatify-app-server",
   "version": "1.0.0",
   "main": "src/index.js",
-  "repository": "git@github.com:wuzhe0912/Chatify-Server.git",
+  "repository": "git@github.com:wuzhe0912/chatify-app-server.git",
   "author": "Pitt Wu <kgb00128@gmail.com>",
   "license": "MIT",
   "type": "module",

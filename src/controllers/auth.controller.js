@@ -1,5 +1,10 @@
 export const register = (req, res) => {
-  res.send('Register');
+  const { email, fullName, password } = req.body;
+  try {
+
+  } catch (error) {
+
+  }
 };
 
 export const login = (req, res) => {
