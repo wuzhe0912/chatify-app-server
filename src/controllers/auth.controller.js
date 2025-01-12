@@ -24,13 +24,16 @@ export const register = async (req, res, next) => {
     const newUser = await registerUser({ email, fullName, password });
 
     // generate token and setting cookie
-    generateToken(newUser._id, res);
+    const token = generateToken(newUser._id);
 
     res.status(201).json({
-      _id: newUser._id,
-      email: newUser.email,
-      fullName: newUser.fullName,
-      profilePicture: newUser.profilePicture,
+      token,
+      user: {
+        _id: newUser._id,
+        email: newUser.email,
+        fullName: newUser.fullName,
+        profilePicture: newUser.profilePicture,
+      },
     });
   } catch (error) {
     next(error);
@@ -45,13 +48,16 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await loginUser({ email, password });
 
-    generateToken(user._id, res);
+    const token = generateToken(user._id);
 
     res.status(200).json({
-      _id: user._id,
-      email: user.email,
-      fullName: user.fullName,
-      profilePicture: user.profilePicture,
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        fullName: user.fullName,
+        profilePicture: user.profilePicture,
+      },
     });
   } catch (error) {
     next(error);
@@ -60,7 +66,6 @@ export const login = async (req, res, next) => {
 
 export const logout = (req, res) => {
   try {
-    res.clearCookie('token');
     return res.status(200).json({ message: 'Logout successful' });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
