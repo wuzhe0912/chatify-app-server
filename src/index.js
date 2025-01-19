@@ -12,13 +12,16 @@ import { errorHandler } from './middleware/error.middleware.js';
 dotenv.config();
 
 const PORT = process.env.PORT || 5001;
+const allowedOrigins = JSON.parse(
+  process.env.CLIENT_URLS || '["http://localhost:5173"]',
+);
 
 // 1. basic middleware
 app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ['http://localhost:5173'],
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
