@@ -28,11 +28,45 @@ export const getMessages = async (req, res) => {
         { senderId: myId, receiverId: userToChatWithId },
         { senderId: userToChatWithId, receiverId: myId },
       ],
+      isDeleted: { $ne: true }, // 排除已刪除的訊息
     }).sort({ createdAt: 1 }); // 按照創建時間排序，採升序排列，方便前端顯示最新的消息
 
     res.status(200).json(messages);
   } catch (error) {
     console.log('Error in getMessages controller', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const sendMessage = async (req, res) => {
+  try {
+    const { text, image } = req.body;
+    const { id: receiverId } = req.params;
+    const senderId = req.user._id;
+
+    let imageUrl = null;
+    if (image) {
+      const result = await cloudinary.uploader.upload(image);
+      imageUrl = result.secure_url;
+    }
+
+    const newMessage = new Message({
+      senderId,
+      receiverId,
+      text,
+      image: imageUrl,
+    });
+
+    await newMessage.save();
+
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('newMessage', newMessage);
+    }
+
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.log('Error in sendMessage controller', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -81,35 +115,37 @@ export const editMessage = async (req, res) => {
   }
 };
 
-export const sendMessage = async (req, res) => {
+export const deleteMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
-    const { id: receiverId } = req.params;
+    const { id: messageId } = req.params;
     const senderId = req.user._id;
 
-    let imageUrl = null;
-    if (image) {
-      const result = await cloudinary.uploader.upload(image);
-      imageUrl = result.secure_url;
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
     }
 
-    const newMessage = new Message({
-      senderId,
-      receiverId,
-      text,
-      image: imageUrl,
-    });
+    // 確認是否為訊息發送者
+    if (message.senderId.toString() !== senderId.toString()) {
+      return res
+        .status(403)
+        .json({ message: 'Not authorized to delete this message' });
+    }
 
-    await newMessage.save();
+    // 軟刪除訊息
+    message.isDeleted = true;
+    message.deletedAt = new Date();
+    await message.save();
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
+    // 透過 Socket.io 通知接收者訊息已被刪除
+    const receiverSocketId = getReceiverSocketId(message.receiverId);
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit('newMessage', newMessage);
+      io.to(receiverSocketId).emit('messageDeleted', message._id);
     }
 
-    res.status(201).json(newMessage);
+    res.status(200).json(message);
   } catch (error) {
-    console.log('Error in sendMessage controller', error);
+    console.log('Error in deleteMessage controller', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
