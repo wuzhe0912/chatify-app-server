@@ -4,11 +4,15 @@ import express from 'express';
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = JSON.parse(
+  process.env.CLIENT_URLS || '["http://localhost:5173"]',
+);
 
 // init socket.io and set client url
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173'],
+    origin: allowedOrigins,
+    credentials: true,
   },
 });
 
