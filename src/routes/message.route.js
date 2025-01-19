@@ -4,12 +4,18 @@ import {
   getUsersForSidebar,
   getMessages,
   sendMessage,
+  editMessage,
 } from '../controllers/message.controller.js';
 
 const router = express.Router();
 
+// 取得所有使用者(用於側邊欄)
 router.get('/users', protectRoute, getUsersForSidebar);
+// 取得與特定使用者的聊天紀錄
 router.get('/:id', protectRoute, getMessages);
+// 允許編輯訊息
+router.put('/:id', protectRoute, editMessage);
+// 發送訊息
 router.post('/send/:id', protectRoute, sendMessage);
 
 export default router;

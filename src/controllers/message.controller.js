@@ -37,6 +37,50 @@ export const getMessages = async (req, res) => {
   }
 };
 
+// 編輯訊息
+export const editMessage = async (req, res) => {
+  try {
+    const { id: messageId } = req.params;
+    const { text } = req.body;
+    const senderId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // 檢查發送者是否是訊息的發送者
+    if (message.senderId.toString() !== senderId.toString()) {
+      return res
+        .status(403)
+        .json({ message: 'Not authorized to edit this message' });
+    }
+
+    // 儲存原始訊息到編輯歷史
+    message.editHistory.push({
+      text: message.text,
+      image: message.image,
+      editedAt: new Date(),
+    });
+
+    // 更新訊息
+    message.text = text;
+    message.isEdited = true;
+    await message.save();
+
+    // 透過 socket 通知接收者訊息已編輯
+    const receiverSocketId = getReceiverSocketId(message.receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('messageEdited', message);
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    console.log('Error in editMessage controller', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export const sendMessage = async (req, res) => {
   try {
     const { text, image } = req.body;
