@@ -23,14 +23,27 @@ const messageSchema = new mongoose.Schema(
         timestamp: { type: Date, default: Date.now },
       },
     ],
-    // 是否已讀
-    readStatus: {
-      isRead: { type: Boolean, default: false },
-      readAt: { type: Date, default: null },
-    },
     // 刪除訊息
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
+    // 訊息狀態追蹤
+    status: {
+      type: String,
+      enum: ['sent', 'delivered', 'read'],
+      default: 'sent',
+    },
+    readBy: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        readAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true },
 );
