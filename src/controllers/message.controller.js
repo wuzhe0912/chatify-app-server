@@ -2,6 +2,7 @@ import User from '../models/user.model.js';
 import Message from '../models/message.model.js';
 import cloudinary from '../lib/cloudinary.js';
 import { getReceiverSocketId, io } from '../lib/socket.js';
+import { updateMessageReadStatus } from '../services/message.service.js';
 
 export const getUsersForSidebar = async (req, res) => {
   try {
@@ -147,5 +148,30 @@ export const deleteMessage = async (req, res) => {
   } catch (error) {
     console.log('Error in deleteMessage controller', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const markMessageAsRead = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const updatedMessage = await updateMessageReadStatus(messageId, userId);
+
+    // 透過 Socket.io 通知發送者訊息已讀
+    const senderSocketId = getReceiverSocketId(updatedMessage.senderId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit('messageRead', {
+        messageId: updatedMessage._id,
+        readBy: updatedMessage.readBy,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: updatedMessage,
+    });
+  } catch (error) {
+    next(error);
   }
 };

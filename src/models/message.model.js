@@ -32,11 +32,13 @@ const messageSchema = new mongoose.Schema(
       enum: ['sent', 'delivered', 'read'],
       default: 'sent',
     },
+    // 已讀狀態追蹤
     readBy: [
       {
         userId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'User',
+          required: true,
         },
         readAt: {
           type: Date,
@@ -44,6 +46,32 @@ const messageSchema = new mongoose.Schema(
         },
       },
     ],
+    // 送達狀態追蹤
+    deliveredTo: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        deliveredAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    // 訊息類型 (後續可以擴充開發群組聊天)
+    chatType: {
+      type: String,
+      enum: ['private', 'group'],
+      default: 'private',
+    },
+    // 群組 ID
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      default: null,
+    },
   },
   { timestamps: true },
 );

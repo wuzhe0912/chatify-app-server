@@ -38,6 +38,41 @@ io.on('connection', (socket) => {
     delete userSocketMap[userId];
     io.emit('getOnlineUsers', Object.keys(userSocketMap));
   });
+
+  // 監聽訊息已讀事件
+  socket.on('markMessageAsRead', async ({ messageId, readerId }) => {
+    try {
+      const message = await Message.findById(messageId);
+      if (message) {
+        // 檢查是否已經標記為已讀
+        const alreadyRead = message.readBy.some(
+          (read) => read.userId.toString() === readerId.toString(),
+        );
+
+        if (!alreadyRead) {
+          // 更新訊息的已讀狀態
+          message.readBy.push({ userId: readerId, readAt: new Date() });
+          message.status = 'read';
+          await message.save();
+
+          // 取得發送者的 socket id
+          const senderSocketId = getReceiverSocketId(
+            message.senderId.toString(),
+          );
+
+          // 如果發送者在線上，發送已讀通知
+          if (senderSocketId) {
+            io.to(senderSocketId).emit('messageRead', {
+              messageId: message._id,
+              readBy: message.readBy,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in markMessageAsRead socket event:', error);
+    }
+  });
 });
 
 // tool function, 取得接收者的 socket id

@@ -6,6 +6,7 @@ import {
   sendMessage,
   editMessage,
   deleteMessage,
+  markMessageAsRead,
 } from '../controllers/message.controller.js';
 
 const router = express.Router();
@@ -20,5 +21,7 @@ router.put('/:id', protectRoute, editMessage);
 router.post('/send/:id', protectRoute, sendMessage);
 // 刪除訊息
 router.delete('/:id', protectRoute, deleteMessage);
+// 標記訊息為已讀
+router.put('/:messageId/markAsRead', protectRoute, markMessageAsRead);
 
 export default router;
