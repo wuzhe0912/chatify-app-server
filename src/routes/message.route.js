@@ -7,12 +7,15 @@ import {
   editMessage,
   deleteMessage,
   markMessageAsRead,
+  getUnreadMessageCounts,
 } from '../controllers/message.controller.js';
 
 const router = express.Router();
 
 // 取得所有使用者(用於側邊欄)
 router.get('/users', protectRoute, getUsersForSidebar);
+// 取得未讀訊息數量
+router.get('/unreadCounts', protectRoute, getUnreadMessageCounts);
 // 取得與特定使用者的聊天紀錄
 router.get('/:id', protectRoute, getMessages);
 // 允許編輯訊息

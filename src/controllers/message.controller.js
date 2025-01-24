@@ -1,10 +1,11 @@
+import mongoose from 'mongoose';
 import User from '../models/user.model.js';
 import Message from '../models/message.model.js';
 import cloudinary from '../lib/cloudinary.js';
 import { getReceiverSocketId, io } from '../lib/socket.js';
 import { updateMessageReadStatus } from '../services/message.service.js';
 
-export const getUsersForSidebar = async (req, res) => {
+export const getUsersForSidebar = async (req, res, next) => {
   try {
     const loggedInUserId = req.user._id;
     // 取得除了登入使用者以外的所有使用者
@@ -14,12 +15,11 @@ export const getUsersForSidebar = async (req, res) => {
 
     res.status(200).json(filteredUsers);
   } catch (error) {
-    console.log('Error in getUsersForSidebar controller', error);
-    res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
 
-export const getMessages = async (req, res) => {
+export const getMessages = async (req, res, next) => {
   try {
     const { id: userToChatWithId } = req.params;
     const myId = req.user._id;
@@ -34,12 +34,11 @@ export const getMessages = async (req, res) => {
 
     res.status(200).json(messages);
   } catch (error) {
-    console.log('Error in getMessages controller', error);
-    res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
 
-export const sendMessage = async (req, res) => {
+export const sendMessage = async (req, res, next) => {
   try {
     const { text, image } = req.body;
     const { id: receiverId } = req.params;
@@ -67,13 +66,12 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json(newMessage);
   } catch (error) {
-    console.log('Error in sendMessage controller', error);
-    res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
 
 // 編輯訊息
-export const editMessage = async (req, res) => {
+export const editMessage = async (req, res, next) => {
   try {
     const { id: messageId } = req.params;
     const { text } = req.body;
@@ -111,12 +109,11 @@ export const editMessage = async (req, res) => {
 
     res.status(200).json(message);
   } catch (error) {
-    console.log('Error in editMessage controller', error);
-    res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
 
-export const deleteMessage = async (req, res) => {
+export const deleteMessage = async (req, res, next) => {
   try {
     const { id: messageId } = req.params;
     const senderId = req.user._id;
@@ -146,8 +143,7 @@ export const deleteMessage = async (req, res) => {
 
     res.status(200).json(message);
   } catch (error) {
-    console.log('Error in deleteMessage controller', error);
-    res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
 
@@ -171,6 +167,38 @@ export const markMessageAsRead = async (req, res, next) => {
       success: true,
       data: updatedMessage,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUnreadMessageCounts = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+
+    const unreadCounts = await Message.aggregate([
+      {
+        $match: {
+          receiverId: new mongoose.Types.ObjectId(userId),
+          isDeleted: { $ne: true },
+          readBy: {
+            $not: {
+              $elemMatch: {
+                userId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$senderId',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.status(200).json(unreadCounts);
   } catch (error) {
     next(error);
   }
