@@ -10,7 +10,9 @@ const messageSchema = new mongoose.Schema(
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: function() {
+        return this.chatType === 'private';
+      },
     },
     text: { type: String },
     image: { type: String },
@@ -60,7 +62,7 @@ const messageSchema = new mongoose.Schema(
         },
       },
     ],
-    // 訊息類型 (後續可以擴充開發群組聊天)
+    // 訊息類型
     chatType: {
       type: String,
       enum: ['private', 'group'],
@@ -70,7 +72,9 @@ const messageSchema = new mongoose.Schema(
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
-      default: null,
+      required: function() {
+        return this.chatType === 'group';
+      },
     },
   },
   { timestamps: true },
